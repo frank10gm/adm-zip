@@ -163,6 +163,14 @@ module.exports = function () {
             return (_flags & 1) === 1;
         },
 
+        set encripted (value) {
+            if (value) {
+              _flags |= 1;
+            } else {
+              _flags &= ~1;
+            }
+          },
+
         get entryHeaderSize() {
             return Constants.CENHDR + _fnameLen + _extraLen + _comLen;
         },

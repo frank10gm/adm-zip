@@ -421,8 +421,9 @@ module.exports = function (/**String*/ input, /** object */ options) {
          * @param {Buffer | string} content - file content as buffer or utf8 coded string
          * @param {string} comment - file comment
          * @param {number | object} attr - number as unix file permissions, object as filesystem Stats object
+         * @param {string} pass - number as unix file permissions, object as filesystem Stats object
          */
-        addFile: function (/**String*/ entryName, /**Buffer*/ content, /**String*/ comment, /**Number*/ attr) {
+        addFile: function (/**String*/ entryName, /**Buffer*/ content, /**String*/ comment, /**Number*/ attr, /**String*/ pass) {
             let entry = getEntry(entryName);
             const update = entry != null;
 
@@ -462,7 +463,7 @@ module.exports = function (/**String*/ input, /** object */ options) {
 
             entry.attr = fileattr;
 
-            entry.setData(content);
+            entry.setData(content, pass);
             if (!update) _zip.setEntry(entry);
         },
 
@@ -728,7 +729,7 @@ module.exports = function (/**String*/ input, /** object */ options) {
          * @param targetFileName
          * @param callback
          */
-        writeZip: function (/**String*/ targetFileName, /**Function*/ callback) {
+        writeZip: function (/**String*/ targetFileName, /**Function*/ callback, pass) {
             if (arguments.length === 1) {
                 if (typeof targetFileName === "function") {
                     callback = targetFileName;
@@ -741,7 +742,7 @@ module.exports = function (/**String*/ input, /** object */ options) {
             }
             if (!targetFileName) return;
 
-            var zipData = _zip.compressToBuffer();
+            var zipData = _zip.compressToBuffer(pass);
             if (zipData) {
                 var ok = filetools.writeFileTo(targetFileName, zipData, true);
                 if (typeof callback === "function") callback(!ok ? new Error("failed") : null, "");
@@ -774,13 +775,13 @@ module.exports = function (/**String*/ input, /** object */ options) {
          *
          * @return Buffer
          */
-        toBuffer: function (/**Function=*/ onSuccess, /**Function=*/ onFail, /**Function=*/ onItemStart, /**Function=*/ onItemEnd) {
+        toBuffer: function (pass, /**Function=*/ onSuccess, /**Function=*/ onFail, /**Function=*/ onItemStart, /**Function=*/ onItemEnd) {
             this.valueOf = 2;
             if (typeof onSuccess === "function") {
                 _zip.toAsyncBuffer(onSuccess, onFail, onItemStart, onItemEnd);
                 return null;
             }
-            return _zip.compressToBuffer();
+            return _zip.compressToBuffer(pass);
         }
     };
 };

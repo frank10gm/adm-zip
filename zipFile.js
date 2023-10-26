@@ -1,6 +1,7 @@
 const ZipEntry = require("./zipEntry");
 const Headers = require("./headers");
 const Utils = require("./util");
+const Methods = require("./methods");
 
 module.exports = function (/*Buffer|null*/ inBuffer, /** object */ options) {
     var entryList = [],
@@ -235,7 +236,7 @@ module.exports = function (/*Buffer|null*/ inBuffer, /** object */ options) {
          *
          * @return Buffer
          */
-        compressToBuffer: function () {
+        compressToBuffer: function (pass) {
             if (!loadedEntries) {
                 readEntries();
             }
@@ -251,9 +252,18 @@ module.exports = function (/*Buffer|null*/ inBuffer, /** object */ options) {
 
             for (const entry of entryList) {
                 // compress data and set local and entry header accordingly. Reason why is called first
-                const compressedData = entry.getCompressedData();
+                let compressedData = entry.getCompressedData();
+                // let compressedData;
                 // 1. construct data header
+
+                if (pass) {
+                    entry.header.encripted = true;
+                    compressedData = Methods.ZipCrypto.encrypt(compressedData, entry.header, pass);
+                    entry.header.compressedSize = compressedData.length;
+                }
+
                 entry.header.offset = dindex;
+
                 const dataHeader = entry.header.dataHeaderToBinary();
                 const entryNameLen = entry.rawEntryName.length;
                 // 1.2. postheader - data after data header
@@ -283,7 +293,8 @@ module.exports = function (/*Buffer|null*/ inBuffer, /** object */ options) {
             mainHeader.offset = dindex;
 
             dindex = 0;
-            const outBuffer = Buffer.alloc(totalSize);
+            let outBuffer = Buffer.alloc(totalSize);
+
             // write data blocks
             for (const content of dataBlock) {
                 content.copy(outBuffer, dindex);
@@ -295,13 +306,14 @@ module.exports = function (/*Buffer|null*/ inBuffer, /** object */ options) {
                 content.copy(outBuffer, dindex);
                 dindex += content.length;
             }
-
             // write main header
             const mh = mainHeader.toBinary();
             if (_comment) {
                 _comment.copy(mh, Utils.Constants.ENDHDR); // add zip file comment
             }
             mh.copy(outBuffer, dindex);
+
+            console.log('pippo done: ', pass)
 
             return outBuffer;
         },
